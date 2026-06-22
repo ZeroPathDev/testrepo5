@@ -57,3 +57,5 @@ app.get('/fetch', async (req, res) => {
       res.status(500).send(e.message);
     }
   });
+
+  app.listen(3000, () => console.log('HTTP server on port 3000'));
