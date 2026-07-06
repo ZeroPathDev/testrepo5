@@ -39,21 +39,29 @@ app.get('/fetch', async (req, res) => {
       return res.status(400).send('URL not allowed');
     }
     try {
-    // DNS resolution to prevent DNS rebinding
-    try {
+      // Resolve once and pin the request to the validated address to avoid DNS rebinding TOCTOU.
       const addresses = await dns.lookup(parsedUrl.hostname, { all: true });
       for (const { address } of addresses) {
         if (isPrivateIp(address)) {
           return res.status(400).send('URL not allowed');
         }
       }
-    } catch (e) {
-      return res.status(400).send('Invalid hostname');
-    }
-  
-      const resp = await axios.get(url);
+
+      const [firstAddress] = addresses;
+      if (!firstAddress || !firstAddress.address) {
+        return res.status(400).send('Invalid hostname');
+      }
+
+      const lookup = (_hostname, _options, callback) => {
+        callback(null, firstAddress.address, firstAddress.family);
+      };
+
+      const resp = await axios.get(url, {
+        lookup,
+        maxRedirects: 0,
+      });
       res.send(resp.data);
     } catch (e) {
-      res.status(500).send(e.message);
+      return res.status(400).send(e.message);
     }
   });
