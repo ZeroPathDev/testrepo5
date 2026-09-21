@@ -1,0 +1,12 @@
+import subprocess
+from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route("/ping")
+def ping():
+    host = request.args.get("host", "")
+    # Passes request input straight into a shell command.
+    output = subprocess.check_output("ping -c 1 " + host, shell=True)
+    return output
